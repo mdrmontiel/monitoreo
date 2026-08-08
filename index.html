@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<title>Puntos de muestreo - Riachuelo</title>
+<link rel="manifest" href="./manifest.json" />
+<meta name="theme-color" content="#1F3B2C" />
+<link rel="stylesheet" href="./styles.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+</head>
+<body>
+
+<div id="auth-screen">
+  <div class="auth-card">
+    <h1 id="auth-title">Ingresar</h1>
+    <p class="sub">Puntos de muestreo — Riachuelo</p>
+    <form id="auth-form">
+      <div id="nombre-field" style="display:none;">
+        <label>Tu nombre</label>
+        <input type="text" id="auth-nombre" placeholder="Nombre y apellido" />
+      </div>
+      <label>Correo</label>
+      <input type="email" id="auth-email" required placeholder="tu@correo.com" />
+      <label>Contraseña</label>
+      <input type="password" id="auth-password" required placeholder="••••••••" minlength="6" />
+      <button type="submit" class="auth-btn" id="auth-submit">Ingresar</button>
+      <div class="auth-error" id="auth-error"></div>
+    </form>
+    <div class="auth-toggle">
+      <button type="button" id="auth-toggle-btn">Crear cuenta nueva</button>
+    </div>
+  </div>
+</div>
+
+<div id="app-screen">
+  <div class="topbar">
+    <div>
+      <h1>Puntos de muestreo — Riachuelo</h1>
+      <p class="sub">Paso Martínez → San Luis del Palmar</p>
+    </div>
+    <div class="topbar-right">
+      <span class="pill online" id="online-pill">En línea</span>
+      <span class="pill pending" id="pending-pill" style="display:none;"></span>
+      <span style="font-size:12.5px; color:#6B7A70;" id="user-name"></span>
+      <button class="btn small" id="logout-btn">Salir</button>
+    </div>
+  </div>
+
+  <div class="notice">Todo lo que agregues se guarda en el celular/computadora aunque no tengas señal, y se sincroniza sola cuando vuelva la conexión.</div>
+
+  <div class="body-grid">
+    <div class="mapcol">
+      <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+        <button class="btn active" id="basemap-sat">Satélite</button>
+        <button class="btn" id="basemap-street">Calles</button>
+        <button class="btn" id="refresh-btn">Actualizar</button>
+        <button class="btn" id="download-tiles-btn">Descargar mapa para uso offline</button>
+      </div>
+      <div id="map"></div>
+      <div class="map-status">
+        <span id="map-status">Cargando...</span>
+        <span id="download-status"></span>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="card">
+        <h4>Referencia</h4>
+        <div class="legend-row"><span class="dot" style="background:#1F3B2C"></span> Sub-tramo 1 (mes 1)</div>
+        <div class="legend-row"><span class="dot" style="background:#C99A3E"></span> Sub-tramo 2 (mes 2)</div>
+        <div class="legend-row"><span class="dot pin" style="background:#2F6FA3"></span> Ave</div>
+        <div class="legend-row"><span class="dot pin" style="background:#6B4FA0"></span> Cámara trampa</div>
+        <div class="legend-row"><span class="dot" style="background:#2E7D4F"></span> Fácil acceso</div>
+        <div class="legend-row"><span class="dot" style="background:#C99A3E"></span> Punto de interés</div>
+        <div class="legend-row"><span class="dot" style="background:#7A7A7A"></span> Cobertura vegetal (color propio por categoría, ver el selector al agregar un punto)</div>
+        <div class="legend-row">Anillo dorado grueso = hallazgo destacado</div>
+      </div>
+
+      <div class="card">
+        <h4>Filtrar</h4>
+        <div class="filters">
+          <button class="btn small filter-btn active" data-filter="todos">Todos</button>
+          <button class="btn small filter-btn" data-filter="ave">Aves</button>
+          <button class="btn small filter-btn" data-filter="camara">Cámaras</button>
+          <button class="btn small filter-btn" data-filter="acceso">Acceso</button>
+          <button class="btn small filter-btn" data-filter="interes">Interés</button>
+          <button class="btn small filter-btn" data-filter="cobertura">Cobertura</button>
+          <button class="btn small" id="filter-hallazgos">Solo hallazgos</button>
+        </div>
+      </div>
+
+      <div class="card" id="form-card" style="display:none;">
+        <h4>Nuevo punto</h4>
+        <div class="sub" id="form-coords" style="font-size:12px;color:#6B7A70;margin-bottom:6px;"></div>
+        <form class="form" id="point-form">
+          <label>Fecha *</label>
+          <input type="date" id="f-fecha" required />
+
+          <label>Tipo de punto *</label>
+          <select id="f-tipo">
+            <option value="ave">Ave</option>
+            <option value="camara">Cámara trampa</option>
+            <option value="acceso">Fácil acceso</option>
+            <option value="interes">Punto de interés</option>
+            <option value="cobertura">Cobertura vegetal</option>
+          </select>
+
+          <div id="cobertura-wrap" style="display:none;">
+            <label>Categoría de cobertura</label>
+            <select id="f-cobertura"></select>
+            <div class="newcat-row" id="newcat-wrap" style="display:none;">
+              <input type="text" id="newcat-nombre" placeholder="Nombre de la categoría" />
+              <input type="color" id="newcat-color" value="#7A7A7A" />
+              <button type="button" class="btn small" id="newcat-add-btn">Agregar</button>
+            </div>
+          </div>
+
+          <label>Nota</label>
+          <textarea id="f-nota" placeholder="Observaciones del punto"></textarea>
+
+          <label>Foto (opcional)</label>
+          <input type="file" id="f-foto" accept="image/*" capture="environment" />
+          <img id="photo-preview" class="photo-preview" />
+
+          <label>Tabla de datos (opcional)</label>
+          <div id="table-rows"></div>
+          <button type="button" class="btn small" id="table-add-row">+ Agregar fila</button>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="f-hallazgo" />
+            <label style="margin:0;">Marcar como hallazgo destacado</label>
+          </div>
+
+          <button type="submit" class="save-btn">Guardar punto</button>
+          <button type="button" class="btn" id="cancel-form" style="width:100%; margin-top:6px;">Cancelar</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h4>Puntos guardados (<span id="point-count">0</span>)</h4>
+        <div class="list" id="point-list"><div class="empty">Cargando...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="./config.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
