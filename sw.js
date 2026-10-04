@@ -1,4 +1,4 @@
-const APP_CACHE = "riachuelo-app-v1";
+const APP_CACHE = "riachuelo-app-v2";
 const TILE_CACHE = "riachuelo-tiles-v1";
 
 const APP_SHELL = [
@@ -6,6 +6,9 @@ const APP_SHELL = [
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./obra.js",
+  "./data/eje.js",
+  "./data/recomendaciones.js",
   "./config.js",
   "./manifest.json",
   "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css",
@@ -74,17 +77,18 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // App: primero la red (así cada mejora publicada llega sola) y, sin señal, la copia guardada
+  if (event.request.method !== "GET") return;
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((res) => {
+    fetch(event.request)
+      .then((res) => {
+        if (res.ok) {
           const resClone = res.clone();
           caches.open(APP_CACHE).then((cache) => cache.put(event.request, resClone));
-          return res;
-        })
-        .catch(() => cached);
-    })
+        }
+        return res;
+      })
+      .catch(() => caches.match(event.request, { ignoreSearch: true }))
   );
 });
 

@@ -16,7 +16,7 @@ const sb = window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPAB
 
 // ---------- IndexedDB ----------
 const DB_NAME = "riachuelo_db";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 let dbPromise = null;
 
 function openDB() {
@@ -27,6 +27,7 @@ function openDB() {
       const db = req.result;
       if (!db.objectStoreNames.contains("puntos")) db.createObjectStore("puntos", { keyPath: "id" });
       if (!db.objectStoreNames.contains("categorias")) db.createObjectStore("categorias", { keyPath: "id" });
+      if (!db.objectStoreNames.contains("registros_obra")) db.createObjectStore("registros_obra", { keyPath: "id" });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -118,22 +119,29 @@ document.getElementById("auth-form").onsubmit = async (e) => {
 
 document.getElementById("logout-btn").onclick = async () => {
   await sb.auth.signOut();
-  currentUser = null;
-  currentProfile = null;
-  appScreen.style.display = "none";
-  authScreen.style.display = "flex";
+  location.reload();
 };
 
 async function afterLogin() {
-  const { data } = await sb.auth.getUser();
-  currentUser = data.user;
+  // getSession funciona sin señal (usa la sesión guardada en el dispositivo)
+  const { data } = await sb.auth.getSession();
+  currentUser = data.session && data.session.user;
   if (!currentUser) return;
   try {
     const { data: profile } = await sb.from("profiles").select("*").eq("id", currentUser.id).single();
     currentProfile = profile;
-  } catch (e) {
-    currentProfile = { nombre: currentUser.email.split("@")[0] };
+    // se guarda en el dispositivo para poder usarlo sin señal
+    if (profile) localStorage.setItem("riachuelo_perfil", JSON.stringify(profile));
+  } catch (e) { /* sin conexión */ }
+  if (!currentProfile) {
+    try {
+      const guardado = JSON.parse(localStorage.getItem("riachuelo_perfil"));
+      if (guardado && guardado.id === currentUser.id) currentProfile = guardado;
+    } catch (e) {}
   }
+  if (!currentProfile) currentProfile = { nombre: currentUser.email.split("@")[0] };
+  // antes de correr la migración v2 no existe la columna rol: se trata como equipo
+  if (!currentProfile.rol) currentProfile.rol = "equipo";
   document.getElementById("user-name").textContent = (currentProfile && currentProfile.nombre) || currentUser.email;
   authScreen.style.display = "none";
   appScreen.style.display = "block";
@@ -319,19 +327,25 @@ function initMap() {
     document.getElementById("basemap-sat").classList.remove("active");
   };
 
-  L.polyline(SUB1, { color: "#1F3B2C", weight: 4, interactive: false }).addTo(map);
-  L.polyline(SUB2, { color: "#C99A3E", weight: 4, interactive: false }).addTo(map);
+  // Eje de obra Etapa IV (KMZ de ICAA), dividido en el punto medio (Prog. 38,70)
+  const EJE_LL = window.EJE.map((p) => [p[0], p[1]]);
+  const iMid = window.EJE.findIndex((p) => p[2] >= 38.7);
+  L.polyline(EJE_LL.slice(0, iMid + 1), { color: "#1F3B2C", weight: 4, interactive: false }).addTo(map);
+  L.polyline(EJE_LL.slice(iMid), { color: "#C99A3E", weight: 4, interactive: false }).addTo(map);
 
   function refMarker(latlng, label) {
     L.circleMarker(latlng, { radius: 7, color: "#fff", weight: 2, fillColor: "#8C2F2F", fillOpacity: 1, interactive: false }).addTo(map).bindTooltip(label);
   }
-  refMarker(TRACK[0], "Paso Martínez (límite del dragado)");
-  refMarker(TRACK[MID_IDX], "División Sub-tramo 1 / 2");
-  refMarker(TRACK[TRACK.length - 1], "San Luis del Palmar (Camping Las Palmeras)");
+  const enProg = (v) => { const p = window.EJE.find((q) => q[2] >= v) || window.EJE[window.EJE.length - 1]; return [p[0], p[1]]; };
+  refMarker(enProg(27.15), "Prog. 27,150 (inicio del tramo)");
+  refMarker(enProg(38.7), "Prog. 38,70 – División Sub-tramo 1 / 2");
+  refMarker(enProg(47.047), "Prog. 47,047 – Cruce RP 5");
+  refMarker(enProg(50.25), "Prog. 50,250 – Camping Las Palmeras");
 
   markersLayer = L.layerGroup().addTo(map);
 
   map.on("click", (e) => {
+    if (currentProfile && currentProfile.rol !== "equipo") return; // solo el equipo carga puntos de muestreo
     pendingLatLng = e.latlng;
     if (pendingMarker) map.removeLayer(pendingMarker);
     pendingMarker = L.circleMarker(e.latlng, { radius: 8, color: "#333", weight: 2, fillColor: "#fff", fillOpacity: 0.9, dashArray: "3,3" }).addTo(map);
@@ -410,7 +424,8 @@ function renderList() {
       (p.hallazgo ? '<span class="badge-find">Hallazgo</span>' : "") + (p._pending ? '<span class="badge-find" style="background:#FBEAEA;color:#A32D2D;">sin sync</span>' : "") + "</div>" +
       '<div class="point-meta">' + (p.autor_nombre || "") + (p.fecha ? " · " + p.fecha : "") + "</div>" +
       (p.nota ? '<div class="point-note">' + escapeHtml(p.nota) + "</div>" : "") +
-      '<div class="point-actions"><button class="link-btn" data-go="' + p.lat + "," + p.lng + '">Ir al punto</button><button class="link-btn" data-del="' + p.id + '">Eliminar</button></div>';
+      '<div class="point-actions"><button class="link-btn" data-go="' + p.lat + "," + p.lng + '">Ir al punto</button>' +
+      (currentProfile && currentProfile.rol === "equipo" ? '<button class="link-btn" data-del="' + p.id + '">Eliminar</button>' : "") + "</div>";
     list.appendChild(row);
   });
   list.querySelectorAll("[data-go]").forEach((btn) => {
@@ -557,8 +572,8 @@ function lat2tile(lat, z) {
 
 document.getElementById("download-tiles-btn").onclick = async () => {
   if (!navigator.onLine) { alert("Necesitás conexión para descargar el mapa offline."); return; }
-  const lats = TRACK.map((p) => p[0]);
-  const lngs = TRACK.map((p) => p[1]);
+  const lats = TRACK.map((p) => p[0]).concat(window.EJE.map((p) => p[0]));
+  const lngs = TRACK.map((p) => p[1]).concat(window.EJE.map((p) => p[1]));
   const pad = 0.03;
   const bbox = { minLat: Math.min(...lats) - pad, maxLat: Math.max(...lats) + pad, minLng: Math.min(...lngs) - pad, maxLng: Math.max(...lngs) + pad };
   const zooms = [12, 13, 14];
@@ -592,6 +607,7 @@ async function initApp() {
   await loadPuntos();
   renderAll();
   syncPending();
+  await initObra();
 }
 
 (async function boot() {

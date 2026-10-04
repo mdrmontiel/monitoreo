@@ -124,3 +124,27 @@ sabana, borde de estero), pero cualquiera del equipo puede agregar categorías
 nuevas directamente desde el formulario ("+ Agregar categoría nueva..."),
 eligiendo nombre y color. Quedan disponibles para todos apenas se crean (con
 conexión).
+
+## Versión 2 — Módulo de obra (octubre 2026)
+
+### Qué agrega
+- **Pestaña Obra**: el GPS ubica al usuario en la progresiva del eje de obra y en el sector (A–I) de la línea de base, y muestra las recomendaciones de ese sector (evitar / minimizar), el aviso de época reproductiva y el meandro cercano. Sin GPS se puede elegir el sector o la progresiva a mano.
+- **Registros de obra** (botones grandes, funcionan sin señal): parte diario de avance con lista de verificación, árbol removido (foto obligatoria), hallazgo de fauna y medida aplicada.
+- **Alertas**: los hallazgos críticos (nido activo, madriguera de lobito, mono carayá, fauna herida, primate muerto, mortandad de peces) aparecen al instante para el equipo e ICAA, con botón para avisar también por WhatsApp.
+- **Resumen**: elige un período (por defecto, los últimos 15 días), resume avance, árboles, hallazgos y medidas, y descarga un CSV. Es la base del informe quincenal.
+- **Roles**: `equipo`, `obra`, `icaa`, `propietario`.
+
+### Pasos para activarla (una sola vez)
+1. Supabase → **SQL Editor** → New query → pegar todo `supabase/migracion_v2_obra.sql` → Run.
+   Las cuentas que ya existían quedan como `equipo`. Las nuevas se crean como `obra`.
+2. Para cambiar el rol de alguien: Supabase → **Table Editor** → `profiles` → columna `rol`.
+3. Supabase → **Database → Replication**: verificar que `registros_obra` esté activada en `supabase_realtime` (la migración intenta hacerlo sola).
+4. Subir los archivos a GitHub; Netlify publica solo.
+
+### Archivos nuevos o modificados
+`index.html`, `app.js`, `obra.js` (nuevo), `styles.css`, `sw.js`, `manifest.json`,
+`data/eje.js` y `data/recomendaciones.js` (nuevos), `supabase/migracion_v2_obra.sql` (nuevo).
+
+### Para editar
+- Textos de recomendaciones, sectores, lista diaria y tipos de hallazgo: `data/recomendaciones.js`.
+- Eje de obra: `data/eje.js`, generado del KMZ oficial de ICAA (4-Riachuelo_Etapa_IV.kmz), con progresivas interpoladas entre las de referencia (27,150; 33,000; 39,500; 47,047; 50,250).

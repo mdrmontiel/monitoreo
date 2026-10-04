@@ -118,3 +118,61 @@ body {
 @media (max-width: 760px) {
   .body-grid { flex-direction: column; }
 }
+
+/* ---------- v2: pestañas y módulo de obra ---------- */
+.tabs { display: flex; gap: 4px; margin-bottom: 10px; border-bottom: 1px solid #D8DED9; overflow-x: auto; }
+.tab-btn { background: none; border: none; padding: 10px 14px; font-size: 14px; color: #6B7A70; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
+.tab-btn.active { color: #1F3B2C; font-weight: 700; border-bottom-color: #1F3B2C; }
+.tab-badge { background: #A32D2D; color: #fff; border-radius: 999px; padding: 1px 7px; font-size: 11px; margin-left: 4px; }
+
+.obra-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; align-items: start; }
+.gps-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+.sector-head { border-left: 6px solid #7A7A7A; padding: 4px 0 4px 10px; margin-bottom: 8px; }
+.sector-prog { font-size: 12.5px; color: #6B7A70; }
+.sector-name { font-size: 19px; font-weight: 700; color: #1F3B2C; margin: 2px 0 4px; }
+.prio { color: #fff; font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+.valores { font-size: 13px; color: #3C4A41; margin: 6px 0; }
+#sector-box ul { margin: 4px 0 8px; padding-left: 20px; font-size: 13.5px; }
+#sector-box li { margin: 3px 0; }
+#sector-box h5, #resumen-box h5 { margin: 10px 0 2px; font-size: 13px; text-transform: uppercase; letter-spacing: .03em; }
+.rec-evitar { color: #A32D2D; }
+.rec-min { color: #8A6A22; }
+details summary { cursor: pointer; font-size: 13px; color: #1F3B2C; font-weight: 600; margin: 8px 0 4px; }
+details.manual select, details.manual input { width: 100%; padding: 8px; border: 1px solid #D8DED9; border-radius: 6px; font-size: 14px; }
+
+.aviso { font-size: 12.5px; border-radius: 6px; padding: 7px 10px; margin: 6px 0; }
+.aviso-rojo { background: #FBEAEA; color: #7E1F1F; border: 1px solid #F0C5C5; }
+.aviso-ambar { background: #FAF3E4; color: #6E5418; border: 1px solid #EAD9AE; }
+.aviso-gris { background: #F0F2F0; color: #4A5750; border: 1px solid #D8DED9; }
+
+.acciones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.accion { background: #1F3B2C; color: #fff; border: none; border-radius: 12px; padding: 18px 10px; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 96px; }
+.accion span { font-size: 26px; }
+.accion:active { transform: scale(.98); }
+.accion-rojo { background: #A32D2D; }
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.row2 input { width: 100%; }
+.mini-label { font-size: 12px; color: #6B7A70; display: block; margin-bottom: 3px; }
+#tab-resumen input[type=date] { width: 100%; padding: 6px 8px; border: 1px solid #D8DED9; border-radius: 6px; }
+.res-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.res-table td { border-bottom: 1px solid #E4E8E3; padding: 6px 4px; vertical-align: top; }
+.alerta-row.atendida { opacity: .6; }
+
+.modal { position: fixed; inset: 0; background: rgba(20,30,24,.55); display: flex; align-items: flex-end; justify-content: center; z-index: 2000; }
+.modal-card { background: #fff; width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; border-radius: 14px 14px 0 0; padding: 16px 16px 24px; }
+.modal-card h3 { margin: 0 0 6px; color: #1F3B2C; font-size: 17px; }
+.modal-ubic { font-size: 12.5px; color: #6B7A70; margin-bottom: 4px; }
+.modal-card .form input, .modal-card .form select { font-size: 15px; padding: 8px; }
+.modal-card .checkbox-row { align-items: flex-start; font-size: 13.5px; }
+.modal-card .checkbox-row input { margin-top: 3px; transform: scale(1.2); }
+
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #1F3B2C; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 3000; max-width: 92vw; }
+.toast.urgente { background: #A32D2D; font-weight: 600; }
+
+@media (max-width: 760px) {
+  .obra-grid { grid-template-columns: 1fr; }
+  #app-screen { padding: 10px; }
+  .notice { display: none; }
+}
+@media (min-width: 761px) { .modal { align-items: center; } .modal-card { border-radius: 14px; } }
